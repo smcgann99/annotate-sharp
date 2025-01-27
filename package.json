@@ -16,6 +16,11 @@
         "image",
         "annotation"
     ],
+    "node-red": {
+        "nodes": {
+            "annotate-canvas": "annotate-canvas.js"
+        }
+    },
     "author": "S McGann",
     "license": "Apache-2.0"
 }
