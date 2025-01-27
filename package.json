@@ -1,0 +1,21 @@
+{
+    "name": "annotate-sharp",
+    "version": "0.0.1",
+    "description": "A Node-RED node that can annotate images using the sharp library",
+    "main": "annotate-sharp.js",
+    "dependencies": {
+        "sharp": "^0.29.3"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/smcgann99/annotate-sharp.git"
+    },
+    "keywords": [
+        "node-red",
+        "sharp",
+        "image",
+        "annotation"
+    ],
+    "author": "S McGann",
+    "license": "Apache-2.0"
+}
