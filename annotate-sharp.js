@@ -1,8 +1,7 @@
 module.exports = function(RED) {
     "use strict";
     const sharp = require("sharp");
-    const path = require("path");
-
+   
     function AnnotateSharpNode(config) {
         RED.nodes.createNode(this, config);
         this.data       = config.data || "";
