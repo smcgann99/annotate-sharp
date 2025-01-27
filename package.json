@@ -4,7 +4,7 @@
     "description": "A Node-RED node that can annotate images using the sharp library",
     "main": "annotate-sharp.js",
     "dependencies": {
-        "sharp": "^0.29.3"
+        "sharp": "^0.33.5"
     },
     "repository": {
         "type": "git",
