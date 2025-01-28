@@ -117,7 +117,7 @@ module.exports = function(RED) {
                             handleError(err, msg, "Image processing error");
                         });
                 } else {
-                    handleError(new Error("No annotations provided"), msg, "No annotations");
+                    handleError(new Error("No annotations provided"), msg, "No annotations", input);
                 }
             } else {
                 handleError(new Error("Input is not a buffer"), msg, "Invalid input");
@@ -136,10 +136,13 @@ module.exports = function(RED) {
             }
         }
 
-        function handleError(err, msg, errorText) {
+        function handleError(err, msg, errorText, originalPayload = null) {
             node.error(errorText, msg);
             msg.error = err;
-            node.send([null, msg]);
+            if (originalPayload) {
+                msg.payload = originalPayload;
+            }
+            node.send(msg); // Send the message to the single output
         }
     }
 
