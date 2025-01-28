@@ -9,12 +9,18 @@ module.exports = function(RED) {
         this.dataType   = config.dataType || "msg";
         var node = this;
         const defaultStroke = config.stroke || "#ffC000";
-        const defaultLineWidth = parseInt(config.lineWidth) || 5;
-        const defaultFontSize = config.fontSize || 24;
+        const defaultFontSize =  20;
         const defaultFontColor = config.fontColor || "#ffC000";
         const fontPath = path.join(__dirname, "SourceSansPro-Regular.ttf");
         let input = null;
-
+        function calculateLineWidth(height) {
+            // Define the scale factors
+            const referenceHeight = 700;
+            const referenceWidth = 14;
+            let width = Math.round((height / referenceHeight) * referenceWidth);
+            return Math.max(width, 1);
+          }
+      
         this.on("input", function(msg) {
             RED.util.evaluateNodeProperty(node.data, node.dataType, node, msg, (err, value) => {
                 if (err) {
@@ -35,8 +41,10 @@ module.exports = function(RED) {
                             let svgAnnotations = '<svg width="' + metadata.width + '" height="' + metadata.height + '">';
                             svgAnnotations += `<style>@font-face { font-family: 'SourceSansPro'; src: url('${fontPath}'); }</style>`;
 
-                            msg.annotations.forEach(function(annotation) {
-                                let x, y, r, w, h, textX, textY;
+                            const annotationPromises = msg.annotations.map(async function(annotation) {
+                                let x, y, r, w, h, textX, textY, fontSize;
+                                annotation.fontSize = annotation.fontSize || config.fontSize;
+                                annotation.lineWidth = annotation.lineWidth || config.lineWidth;
 
                                 if (!annotation.type && annotation.bbox) {
                                     annotation.type = 'rect';
@@ -63,13 +71,17 @@ module.exports = function(RED) {
                                             h += y;
                                             y = 0;
                                         }
+                                        
+                                        
                                         svgAnnotations += `<rect x="${x}" y="${y}" width="${w}" height="${h}" 
                                                             fill="none" 
                                                             stroke="${annotation.stroke || defaultStroke}" 
-                                                            stroke-width="${annotation.lineWidth || defaultLineWidth}" />`;
+                                                            stroke-width="${annotation.lineWidth || calculateLineWidth(h)}" />`;
                                         if (annotation.label) {
-                                            textY = (y - 5 < 0 || y - 5 < metadata.height - (y + h + 5 + (annotation.fontSize || defaultFontSize))) ? y + h + 5 + (annotation.fontSize || defaultFontSize) : y - 5;
-                                            svgAnnotations += `<text x="${x}" y="${textY}" font-size="${annotation.fontSize || defaultFontSize}" 
+                                            fontSize = annotation.fontSize || await calculateFontSize(annotation.label, w, defaultFontSize);
+                                            node.warn(fontSize);
+                                            textY = (y - 5 < 0 || y - 5 < metadata.height - (y + h + 5 + fontSize)) ? y + h + 5 + fontSize : y - 5;
+                                            svgAnnotations += `<text x="${x}" y="${textY}" font-size="${fontSize}" 
                                                                 fill="${annotation.fontColor || defaultFontColor}" font-family="SourceSansPro">${annotation.label}</text>`;
                                         }
                                         break;
@@ -80,20 +92,22 @@ module.exports = function(RED) {
                                         svgAnnotations += `<circle cx="${x}" cy="${y}" r="${r}" 
                                                             fill="none" 
                                                             stroke="${annotation.stroke || defaultStroke}" 
-                                                            stroke-width="${annotation.lineWidth || defaultLineWidth}" />`;
+                                                            stroke-width="${annotation.lineWidth || calculateLineWidth(r*2)}" />`;
                                         if (annotation.label) {
+                                            fontSize = annotation.fontSize || await calculateFontSize(annotation.label, 2 * r, defaultFontSize);
                                             textX = x - r;
-                                            textY = (y - r - 5 < 0 || y - r - 5 < metadata.height - (y + r + 5 + (annotation.fontSize || defaultFontSize))) ? y + r + 5 + (annotation.fontSize || defaultFontSize) : y - r - 5;
-                                            svgAnnotations += `<text x="${textX}" y="${textY}" font-size="${annotation.fontSize || defaultFontSize}" 
+                                            textY = (y - r - 5 < 0 || y - r - 5 < metadata.height - (y + r + 5 + fontSize)) ? y + r + 5 + fontSize : y - r - 5;
+                                            svgAnnotations += `<text x="${textX}" y="${textY}" font-size="${fontSize}" 
                                                                 fill="${annotation.fontColor || defaultFontColor}" font-family="SourceSansPro">${annotation.label}</text>`;
                                         }
                                         break;
                                 }
                             });
 
-                            svgAnnotations += '</svg>';
-
-                            return image.composite([{ input: Buffer.from(svgAnnotations), top: 0, left: 0 }]).toBuffer();
+                            return Promise.all(annotationPromises).then(() => {
+                                svgAnnotations += '</svg>';
+                                return image.composite([{ input: Buffer.from(svgAnnotations), top: 0, left: 0 }]).toBuffer();
+                            });
                         })
                         .then(outputBuffer => {
                             msg.payload = outputBuffer;
@@ -109,6 +123,18 @@ module.exports = function(RED) {
                 handleError(new Error("Input is not a buffer"), msg, "Invalid input");
             }
         });
+
+        async function calculateFontSize(text, maxWidth, defaultFontSize) {
+            const svgText = `<svg xmlns="http://www.w3.org/2000/svg"><text x="0" y="0" font-family="SourceSansPro" font-size="${defaultFontSize}">${text}</text></svg>`;
+            try {
+                const metadata = await sharp(Buffer.from(svgText)).metadata();
+                const textWidth = metadata.width;
+                const scaleFactor = maxWidth / textWidth;
+                return Math.ceil( Math.max(defaultFontSize * scaleFactor, defaultFontSize));
+            } catch {
+                return defaultFontSize; // Fallback to default font size in case of error
+            }
+        }
 
         function handleError(err, msg, errorText) {
             node.error(errorText, msg);
