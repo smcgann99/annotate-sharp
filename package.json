@@ -22,5 +22,13 @@
         }
     },
     "author": "S McGann",
+    "contributors": [
+        {
+            "name": "S McGann"
+        },
+        {
+            "name": "Nick O'Leary"
+        }
+    ],
     "license": "Apache-2.0"
 }

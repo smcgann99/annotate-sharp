@@ -78,8 +78,17 @@ module.exports = function(RED) {
                                                             stroke-width="${annotation.lineWidth || calculateLineWidth(h)}" />`;
                                         if (annotation.label) {
                                             fontSize = annotation.fontSize || await calculateFontSize(annotation.label, w, defaultFontSize);
-                                            node.warn(fontSize);
-                                            textY = (y - 5 < 0 || y - 5 < metadata.height - (y + h + 5 + fontSize)) ? y + h + 5 + fontSize : y - 5;
+                                          
+                                            if (annotation.labelLocation) {
+                                                if (annotation.labelLocation === "top") {
+                                                    textY = Math.max(y - Math.round(0.2 * fontSize), 0);
+                                                } else if (annotation.labelLocation === "bottom") {
+                                                    textY = Math.min(y + h + Math.round(1.2 * fontSize), metadata.height); 
+                                                }
+                                            } else {
+                                                textY = (y - Math.round(0.2 * fontSize) < 0 || y - Math.round(0.2 * fontSize) < metadata.height - (y + h + Math.round(1.2 * fontSize))) ? y + h + Math.round(1.2 * fontSize) : y - Math.round(0.2 * fontSize);
+                                            }
+
                                             svgAnnotations += `<text x="${x}" y="${textY}" font-size="${fontSize}" 
                                                                 fill="${annotation.fontColor || defaultFontColor}" font-family="SourceSansPro">${annotation.label}</text>`;
                                         }
@@ -95,7 +104,16 @@ module.exports = function(RED) {
                                         if (annotation.label) {
                                             fontSize = annotation.fontSize || await calculateFontSize(annotation.label, 2 * r, defaultFontSize);
                                             textX = x - r;
-                                            textY = (y - r - 5 < 0 || y - r - 5 < metadata.height - (y + r + 5 + fontSize)) ? y + r + 5 + fontSize : y - r - 5;
+                                            if (annotation.labelLocation) {
+                                                if (annotation.labelLocation === "top") {
+                                                    textY = Math.max(y - r - Math.round(0.2 * fontSize), 0);
+                                                } else if (annotation.labelLocation === "bottom") {
+                                                    textY = Math.min(y + r + Math.round(1.2 * fontSize), metadata.height-y + r + Math.round(1.2 * fontSize));
+                                                }
+                                            } else {
+                                                textY = (y - r - Math.round(0.2 * fontSize) < 0 || y - r - Math.round(0.2 * fontSize) < metadata.height - (y + r + Math.round(1.2 * fontSize))) ? y + r + Math.round(1.2 * fontSize) : y - r - Math.round(0.2 * fontSize);
+                                            }
+
                                             svgAnnotations += `<text x="${textX}" y="${textY}" font-size="${fontSize}" 
                                                                 fill="${annotation.fontColor || defaultFontColor}" font-family="SourceSansPro">${annotation.label}</text>`;
                                         }

@@ -11,7 +11,7 @@ Install
 
 Run the following commands in your Node-RED user directory - typically `~/.node-red`
 
-npm install annotate-canvas
+npm install annotate-sharp
 
 
 Usage
@@ -35,6 +35,8 @@ Each annotation is an object with the following properties:
  - `lineWidth` (*number*) : the stroke width used to draw the annotation. `Automatic if not provided`
  - `fontSize` (*number*) : the font size to use for the label. `Automatic if not provided`
  - `fontColor` (*string*) : the color of the font to use for the label. Default: `#ffC000`
+ - `labelLocation` (*string*) : The location to place the label. `top` or `bottom`.
+    If this property is not set it will default to `automatic` and place where there is more room.
  
 
 Examples
