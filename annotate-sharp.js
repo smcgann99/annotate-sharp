@@ -3,6 +3,13 @@ module.exports = function(RED) {
     const sharp = require("sharp");
     const path = require("path");
 
+    function calculateLineWidth(height) {
+        const referenceHeight = 700;
+        const referenceWidth = 14;
+        let width = Math.round((height / referenceHeight) * referenceWidth);
+        return Math.max(width, 1);
+    }
+
     function AnnotateSharpNode(config) {
         RED.nodes.createNode(this, config);
         this.data       = config.data || "";
@@ -13,14 +20,7 @@ module.exports = function(RED) {
         const defaultFontColor = config.fontColor || "#ffC000";
         const fontPath = path.join(__dirname, "SourceSansPro-Regular.ttf");
         let input = null;
-        function calculateLineWidth(height) {
-            // Define the scale factors
-            const referenceHeight = 700;
-            const referenceWidth = 14;
-            let width = Math.round((height / referenceHeight) * referenceWidth);
-            return Math.max(width, 1);
-          }
-      
+
         this.on("input", function(msg) {
             RED.util.evaluateNodeProperty(node.data, node.dataType, node, msg, (err, value) => {
                 if (err) {
@@ -71,7 +71,6 @@ module.exports = function(RED) {
                                             h += y;
                                             y = 0;
                                         }
-                                        
                                         
                                         svgAnnotations += `<rect x="${x}" y="${y}" width="${w}" height="${h}" 
                                                             fill="none" 
@@ -126,14 +125,10 @@ module.exports = function(RED) {
 
         async function calculateFontSize(text, maxWidth, defaultFontSize) {
             const svgText = `<svg xmlns="http://www.w3.org/2000/svg"><text x="0" y="0" font-family="SourceSansPro" font-size="${defaultFontSize}">${text}</text></svg>`;
-            try {
-                const metadata = await sharp(Buffer.from(svgText)).metadata();
-                const textWidth = metadata.width;
-                const scaleFactor = maxWidth / textWidth;
-                return Math.ceil( Math.max(defaultFontSize * scaleFactor, defaultFontSize));
-            } catch {
-                return defaultFontSize; // Fallback to default font size in case of error
-            }
+            const metadata = await sharp(Buffer.from(svgText)).metadata();
+            const textWidth = metadata.width;
+            const scaleFactor = maxWidth / textWidth;
+            return Math.ceil(Math.max(defaultFontSize * scaleFactor, defaultFontSize));
         }
 
         function handleError(err, msg, errorText, originalPayload = null) {
